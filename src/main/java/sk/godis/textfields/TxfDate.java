@@ -1,8 +1,7 @@
-package sk.godis.components;
+package sk.godis.textfields;
 
 
-import java.awt.Color;
-import java.awt.Dimension;
+import java.awt.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
@@ -25,7 +24,7 @@ public class TxfDate extends JTextField implements KeyListener,FocusListener{
 
     int caretPosition;  
     private static char dateSeparator = '.';
-    private DateFormat dateFormat = new SimpleDateFormat("dd"+dateSeparator+"MM"+dateSeparator+"yyyy");
+    private DateFormat dateFormat;
     private static final Date now = Calendar.getInstance().getTime(); 
     
     /* upgrade Date now to new java.time
@@ -35,7 +34,7 @@ public class TxfDate extends JTextField implements KeyListener,FocusListener{
 public TxfDate(){
         addKeyListener(this); 
         addFocusListener(this);
-        setFont(new java.awt.Font("Tahoma", 0, 14));
+        setFont(new java.awt.Font("Tahoma", Font.PLAIN, 14));
         setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         setPreferredSize(new Dimension(102, 31));
         dateFormat = new SimpleDateFormat("dd"+dateSeparator+"MM"+dateSeparator+"yyyy");
@@ -153,7 +152,7 @@ private boolean dateValidation(String date){
 
     @Override
     public void focusLost(FocusEvent e) {
-        if(dateValidation(getText())==false){
+        if(!dateValidation(getText())){
             setBackground(Color.red);    
             requestFocusInWindow();
         }   
@@ -162,10 +161,10 @@ private boolean dateValidation(String date){
     
     
     
-    class MyIntFilter extends DocumentFilter{
+    static class MyIntFilter extends DocumentFilter{
         @Override
         public void insertString(DocumentFilter.FilterBypass fb, int offset, String string,
-              AttributeSet attr) throws BadLocationException {
+              AttributeSet attr) {
         }
 
         @Override
@@ -179,7 +178,7 @@ private boolean dateValidation(String date){
         }
 
         @Override
-        public void remove(DocumentFilter.FilterBypass fb, int offset, int length) throws BadLocationException {
+        public void remove(DocumentFilter.FilterBypass fb, int offset, int length) {
         }
     }
 }
