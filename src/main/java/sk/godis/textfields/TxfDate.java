@@ -8,28 +8,18 @@ import java.awt.event.KeyEvent;
 import static java.awt.event.KeyEvent.VK_BACK_SPACE;
 import static java.awt.event.KeyEvent.VK_DELETE;
 import java.awt.event.KeyListener;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import javax.swing.JTextField;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DocumentFilter;
-import javax.swing.text.PlainDocument;
 
-        
+
 public class TxfDate extends JTextField implements KeyListener,FocusListener{
 
     int caretPosition;  
     private static char dateSeparator = '.';
-    private DateFormat dateFormat;
-    private static final Date now = Calendar.getInstance().getTime(); 
-    
-    /* upgrade Date now to new java.time
-    private static final LocalDate k = LocalDate.now();
-*/
+    private DateTimeFormatter dateFormatter;
+    private static final LocalDate now = LocalDate.now();
 
 public TxfDate(){
         addKeyListener(this); 
@@ -37,12 +27,7 @@ public TxfDate(){
         setFont(new java.awt.Font("Tahoma", Font.PLAIN, 14));
         setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         setPreferredSize(new Dimension(102, 31));
-        dateFormat = new SimpleDateFormat("dd"+dateSeparator+"MM"+dateSeparator+"yyyy");
-        dateFormat.setLenient(false);
-        setText(dateFormat.format(now));
-        
-        PlainDocument doc = (PlainDocument) getDocument();
-        doc.setDocumentFilter(new MyIntFilter());
+        changeFormat();
     }
 
 // Getter
@@ -53,13 +38,16 @@ public TxfDate(){
   // Setter
   public void setDateSeparator(char newDateSeparator) {
     TxfDate.dateSeparator = newDateSeparator;
-    dateFormat = new SimpleDateFormat("dd"+dateSeparator+"MM"+dateSeparator+"yyyy");
-    setText(dateFormat.format(now));
+      changeFormat();
+  }
+  private void changeFormat(){
+      dateFormatter = DateTimeFormatter.ofPattern("dd" + dateSeparator + "MM" + dateSeparator + "yyyy");
+      setText(dateFormatter.format(now));
   }
   
   // Setter
   public void setToday() {
-    setText(dateFormat.format(now));
+    setText(dateFormatter.format(now));
   }
   
       
@@ -69,13 +57,13 @@ private boolean dateValidation(String date){
     int day = 32;
     int i = 0;
     do{
-        ++i;
         try {
-            dateFormat.parse(stringBuilder.toString());
+            LocalDate.parse(stringBuilder.toString(), dateFormatter);
             break;
-        } catch (ParseException e) {
-            --day;
+        } catch (DateTimeParseException e) {
+           --day;
             stringBuilder.replace(0, 2, String.valueOf(day)); 
+            ++i;
         }
     }while(i < 100);
     if(i >= 100)return false;
@@ -87,17 +75,14 @@ private boolean dateValidation(String date){
     
     
     private boolean checkDate(String date) {
-        String patternDay = "([0-9][0-9])\\"+ dateSeparator +"(0?[1-9]|1[0-2])\\"+ dateSeparator +"([0-9]{4})";
+        String patternDay = "(\\d\\d)\\"+ dateSeparator +"(0?[1-9]|1[0-2])\\"+ dateSeparator +"(\\d{4})";
         return date.matches(patternDay);
-  }
-    public boolean isDateValid(){
-        return dateValidation(getText());
     }
     
-
+                           
     @Override
-    public void keyTyped(KeyEvent e) {  
-        // Do nothing
+    public void keyTyped(KeyEvent e) {
+        e.consume();
     }
 
     
@@ -105,41 +90,59 @@ private boolean dateValidation(String date){
     @Override
     public void keyPressed(KeyEvent e) {
         char typedChar = e.getKeyChar();
-        if(typedChar != VK_BACK_SPACE && typedChar != VK_DELETE && !Character.isDigit(typedChar))return;
         
-        caretPosition = getSelectionStart();
-        StringBuilder stringBuilder = new StringBuilder(getText());   
-        if(caretPosition < getText().length()){
-            int offset = 0;
-            if(Character.isDigit(typedChar)){
-                //if press number before ',' replace first number after ','
-                if(caretPosition == 2 || caretPosition == 5)offset = 1;
-                stringBuilder.setCharAt(caretPosition + offset, e.getKeyChar());
-            }
-            //if try to DELLETE number, replace by 0
-            if (typedChar == VK_DELETE){
-                stringBuilder.setCharAt(caretPosition, '0');
-            }
-            
-            setText(stringBuilder.toString());
-            setCaretPosition(caretPosition +1 + offset);
+        if (typedChar != VK_BACK_SPACE && typedChar != VK_DELETE && !Character.isDigit(typedChar)){ 
             return;
         }
+        if (typedChar == VK_BACK_SPACE || typedChar == VK_DELETE || Character.isDigit(typedChar)){ 
+             e.consume();
+        }
+
+        caretPosition = getSelectionStart();
         
-        //if try to BACKSPACE number, replace by 0
-        if (typedChar == VK_BACK_SPACE && caretPosition > 0){
-            stringBuilder.setCharAt(caretPosition -1, '0');
+        if(typedChar == KeyEvent.VK_BACK_SPACE && caretPosition <= 0)
+            return;
+        if((typedChar == KeyEvent.VK_DELETE  || Character.isDigit(typedChar)) 
+                && caretPosition >= getText().length())
+            return;
+        
+        
+        StringBuilder stringBuilder = new StringBuilder(getText());
+        int offset = 0;
+        
+        if (Character.isDigit(typedChar)) {
+            if (caretPosition == 2 || caretPosition == 5)
+                offset = 1;
+
+            stringBuilder.setCharAt(caretPosition + offset, e.getKeyChar());
             setText(stringBuilder.toString());
-            setCaretPosition(caretPosition -1);  
+            setCaretPosition(caretPosition + offset + 1);
+            if(caretPosition == 5){
+                dateValidation(getText());
+            }
+            setBackground(checkDate(getText()) ? null : Color.yellow);
+            return;
         } 
         
+        switch (typedChar) {
+        case KeyEvent.VK_BACK_SPACE -> --caretPosition;
+        case KeyEvent.VK_DELETE -> offset = 1;
+        }
+        
+        
+        if (caretPosition != 2 && caretPosition != 5){
+            stringBuilder.setCharAt(caretPosition, '0');
+            setText(stringBuilder.toString());
+            setBackground(checkDate(getText()) ? null : Color.yellow);
+        }
+        setCaretPosition(caretPosition + offset);
     }
 
     
     
     @Override
     public void keyReleased(KeyEvent e) {
-        // Do nothing
+        e.consume();
     }
     
     
@@ -156,29 +159,5 @@ private boolean dateValidation(String date){
             setBackground(Color.red);    
             requestFocusInWindow();
         }   
-    }
-
-    
-    
-    
-    static class MyIntFilter extends DocumentFilter{
-        @Override
-        public void insertString(DocumentFilter.FilterBypass fb, int offset, String string,
-              AttributeSet attr) {
-        }
-
-        @Override
-        public void replace(DocumentFilter.FilterBypass fb, int offset, int length, String text,
-             AttributeSet attrs) throws BadLocationException {
-
-             String pattern = "([0-9][0-9])\\"+ dateSeparator +"([0-9][0-9])\\"+ dateSeparator +"([0-9][0-9][0-9][0-9])";
-             if(text.matches(pattern) && offset != 3){
-                 super.replace(fb, offset, length, text, attrs);
-             }
-        }
-
-        @Override
-        public void remove(DocumentFilter.FilterBypass fb, int offset, int length) {
-        }
     }
 }
