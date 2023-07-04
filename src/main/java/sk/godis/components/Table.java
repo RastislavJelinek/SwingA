@@ -30,28 +30,24 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
     private boolean mouseHold;
     private boolean multiSelectionAllow = true;
          
-    public Table(){ 
-        this.selectedRows = new ArrayList<>();
-        Table.this.setDefaultRenderer(BigDecimal.class, new cellRenderer(alternateRowColor));
-        Table.this.setDefaultRenderer(Object.class, new cellRenderer(alternateRowColor));
-        Table.this.setDefaultRenderer(Number.class, new cellRenderer(alternateRowColor));
-        Table.this.setDefaultRenderer(Boolean.class, new cellRenderer(alternateRowColor));
-        Table.this.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        Table.this.addMouseListener(new MouseAdapter(){
-            public void mouseClicked(MouseEvent e) {
-                System.out.println("now");
-            }
-        });
+    public Table(){
+        selectedRows = new ArrayList<>();
+        setDefaultRenderer(BigDecimal.class, new cellRenderer(alternateRowColor));
+        setDefaultRenderer(Object.class, new cellRenderer(alternateRowColor));
+        setDefaultRenderer(Number.class, new cellRenderer(alternateRowColor));
+        setDefaultRenderer(Boolean.class, new cellRenderer(alternateRowColor));
+        getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        addMouseListener(this);
         
         //Table.this.setSelectionForeground(Color.BLACK);
         Table.this.addKeyListener(new KeyAdapter(){
         @Override
             public void keyPressed(KeyEvent e) {
-                DefaultTableModel model = (DefaultTableModel)Table.this.getModel();
+                DefaultTableModel model = (DefaultTableModel) getModel();
                 if(e.getKeyCode() == KeyEvent.VK_SPACE){
                     e.consume();
                     if(multiSelectionAllow){
-                        int row = Table.this.convertRowIndexToView(Table.this.getSelectedRow());
+                        int row = convertRowIndexToView(getSelectedRow());
                         if(selectedRows.contains(row)){
                             model.setValueAt(null, row, 0);
                             selectedRows.remove(Integer.valueOf(row));
@@ -79,7 +75,7 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
             }
         
         });
-         this.addPropertyChangeListener("model", evt -> debug());
+        addPropertyChangeListener("model", evt -> debug());
     }
     
     
@@ -90,7 +86,7 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
     }
 
     public void setMultiSelectionAllow(boolean SelThat) {
-        Table.this.multiSelectionAllow = SelThat;
+        this.multiSelectionAllow = SelThat;
     }
     
     // Getter
@@ -99,20 +95,19 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
       }
     
     public void setAlternateRowColor(Color newColor) {
-            Table.this.alternateRowColor = newColor;
-            Table.this.setDefaultRenderer(Object.class, new cellRenderer(alternateRowColor));
-            Table.this.setDefaultRenderer(Number.class, new cellRenderer(alternateRowColor));
-            Table.this.setDefaultRenderer(BigDecimal.class, new cellRenderer(alternateRowColor));
+            this.alternateRowColor = newColor;
+            setDefaultRenderer(Object.class, new cellRenderer(alternateRowColor));
+            setDefaultRenderer(Number.class, new cellRenderer(alternateRowColor));
+            setDefaultRenderer(BigDecimal.class, new cellRenderer(alternateRowColor));
         }
     
     
     
     private void debug() {
-        Table.this.setAutoCreateRowSorter(true);
-        Table.this.getTableHeader().setReorderingAllowed(false);
+        setAutoCreateRowSorter(true);
+        getTableHeader().setReorderingAllowed(false);
 
-        if(this.getColumnCount() > 0){
-            System.out.println("here");
+        if(getColumnCount() > 0){
             ((DefaultRowSorter<?, ?>) getRowSorter()).setSortable(0, false);
             getColumnModel().getColumn(0).setMaxWidth(20);
             getColumnModel().getColumn(0).setResizable(false);
@@ -129,13 +124,13 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
             public void mouseClicked(MouseEvent e) {
                 int column = getTableHeader().columnAtPoint(e.getPoint());
                 if(((DefaultRowSorter<?, ?>) getRowSorter()).isSortable(column)){
-                    TableColumn tableColumn = Table.this.getColumnModel().getColumn(column);
+                    TableColumn tableColumn = getColumnModel().getColumn(column);
                     column = convertColumnIndexToModel(column);
                     if (column != lastCol) {
                         currentOrder = SortOrder.UNSORTED;
                         if(lastCol != -1){
-                            TableColumn lastTableColumn = Table.this.getColumnModel().getColumn(lastCol);
-                            lastTableColumn.setHeaderRenderer(Table.this.getTableHeader().getDefaultRenderer());
+                            TableColumn lastTableColumn = getColumnModel().getColumn(lastCol);
+                            lastTableColumn.setHeaderRenderer(getTableHeader().getDefaultRenderer());
                         }
                         lastCol = column;
                     }
@@ -150,9 +145,9 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
                         sorter.setSortKeys(sortKeys);
 
                         if(currentOrder != SortOrder.UNSORTED){
-                            tableColumn.setHeaderRenderer(new HeaderHighlightRenderer(Table.this.getTableHeader().getDefaultRenderer()));
+                            tableColumn.setHeaderRenderer(new HeaderHighlightRenderer(getTableHeader().getDefaultRenderer()));
                         }else{
-                            tableColumn.setHeaderRenderer(Table.this.getTableHeader().getDefaultRenderer());
+                            tableColumn.setHeaderRenderer(getTableHeader().getDefaultRenderer());
                         }
 
                     }
@@ -166,65 +161,28 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
 
     @Override
     public void changeSelection(int rowIndex, int columnIndex, boolean toggle, boolean extend) {
-        //super.changeSelection(rowIndex, columnIndex, toggle, extend);
-        DefaultTableModel model = (DefaultTableModel)Table.this.getModel();
-
-        if(!selectedRows.contains(this.getSelectionModel().getAnchorSelectionIndex())){
-            this.getSelectionModel().removeSelectionInterval(this.getSelectionModel().getAnchorSelectionIndex(), this.getSelectionModel().getAnchorSelectionIndex());
-        }
-
-        if(columnIndex == 0){
-            if(!mouseHold && multiSelectionAllow){
-                if(selectedRows.contains(this.convertRowIndexToView(rowIndex))){
-                    model.setValueAt(null, this.convertRowIndexToView(rowIndex), 0);
-                    selectedRows.remove(Integer.valueOf(this.convertRowIndexToView(rowIndex)));
-                }else{
-                    model.setValueAt(">", this.convertRowIndexToView(rowIndex), 0);
-                    selectedRows.add(this.convertRowIndexToView(rowIndex));
-                }
-            }
-        }
-        super.changeSelection(rowIndex, columnIndex, toggle, extend);
-
-
-
-    }
-
-    
-   /* @Override
-    public void changeSelection(int rowIndex, int columnIndex, boolean toggle, boolean extend) {
-        DefaultTableModel model = (DefaultTableModel)Table.this.getModel();
+        DefaultTableModel model = (DefaultTableModel)getModel();
         int anchorSelectionIndex = getSelectionModel().getAnchorSelectionIndex();
-
         if(!selectedRows.contains(anchorSelectionIndex)){
             getSelectionModel().removeSelectionInterval(anchorSelectionIndex, anchorSelectionIndex);
         }
 
-        if(columnIndex != 0){
+        if (columnIndex != 0 || mouseHold || !multiSelectionAllow) {
             super.changeSelection(rowIndex, columnIndex, toggle, extend);
-        }
-
-        if (mouseHold || !multiSelectionAllow) {
-            super.changeSelection(rowIndex, columnIndex, toggle, extend);
+            return;
         }
 
         int rowIndexToView = convertRowIndexToView(rowIndex);
 
-        if(selectedRows.contains(rowIndexToView)){
-            model.setValueAt(null, rowIndexToView, 0);
-            selectedRows.remove(rowIndexToView);
-            super.changeSelection(rowIndex, columnIndex, toggle, extend);
+        boolean contains = selectedRows.contains(rowIndexToView);
+        model.setValueAt(contains ? null : ">", rowIndexToView, 0);
+        if (contains) {
+            selectedRows.remove(Integer.valueOf(rowIndexToView));
+        } else {
+            selectedRows.add(rowIndexToView);
         }
-        model.setValueAt(">", rowIndexToView, 0);
-        selectedRows.add(rowIndexToView);
         super.changeSelection(rowIndex, columnIndex, toggle, extend);
-   }*/
-    
-    
-    
-    
-    
-    
+    }
 
 
     @Override
