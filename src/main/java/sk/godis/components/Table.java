@@ -4,10 +4,7 @@ import javax.swing.*;
 import javax.swing.RowSorter.SortKey;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
+import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.Serial;
@@ -32,15 +29,12 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
          
     public Table(){
         selectedRows = new ArrayList<>();
-        setDefaultRenderer(BigDecimal.class, new cellRenderer(alternateRowColor));
-        setDefaultRenderer(Object.class, new cellRenderer(alternateRowColor));
-        setDefaultRenderer(Number.class, new cellRenderer(alternateRowColor));
-        setDefaultRenderer(Boolean.class, new cellRenderer(alternateRowColor));
+        renderersUpdate();
         getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         addMouseListener(this);
-        
+
         //Table.this.setSelectionForeground(Color.BLACK);
-        Table.this.addKeyListener(new KeyAdapter(){
+        addKeyListener(new KeyAdapter(){
         @Override
             public void keyPressed(KeyEvent e) {
                 DefaultTableModel model = (DefaultTableModel) getModel();
@@ -68,19 +62,24 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
                 if(e.getKeyCode() == KeyEvent.VK_LEFT){
                     e.consume();
                 }
-                 
-                 
-                 
-                 
+
+
+
+
             }
-        
+
         });
         addPropertyChangeListener("model", evt -> debug());
     }
-    
-    
 
-    
+    private void renderersUpdate() {
+        setDefaultRenderer(BigDecimal.class, new cellRenderer(alternateRowColor));
+        setDefaultRenderer(Object.class, new cellRenderer(alternateRowColor));
+        setDefaultRenderer(Number.class, new cellRenderer(alternateRowColor));
+        setDefaultRenderer(Boolean.class, new cellRenderer(alternateRowColor));
+    }
+
+
     public boolean isMultiSelectionAllow() {
         return multiSelectionAllow;
     }
@@ -96,12 +95,10 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
     
     public void setAlternateRowColor(Color newColor) {
             this.alternateRowColor = newColor;
-            setDefaultRenderer(Object.class, new cellRenderer(alternateRowColor));
-            setDefaultRenderer(Number.class, new cellRenderer(alternateRowColor));
-            setDefaultRenderer(BigDecimal.class, new cellRenderer(alternateRowColor));
+            renderersUpdate();
         }
-    
-    
+
+
     
     private void debug() {
         setAutoCreateRowSorter(true);
@@ -112,9 +109,8 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
             getColumnModel().getColumn(0).setMaxWidth(20);
             getColumnModel().getColumn(0).setResizable(false);
             getColumnModel().getColumn(0).setHeaderValue(null);
-        }
 
-        //setDefaultEditor(Object.class, null);
+        }
         
         getTableHeader().addMouseListener(new MouseAdapter() {
             private SortOrder currentOrder = SortOrder.UNSORTED;
@@ -187,7 +183,6 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
 
     @Override
     public void mouseClicked(MouseEvent e) {
-       // throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
     @Override
@@ -202,12 +197,10 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
 
     @Override
     public void mouseEntered(MouseEvent e) {
-       // throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
     @Override
     public void mouseExited(MouseEvent e) {
-        //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 
@@ -227,10 +220,62 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
         public Component getTableCellRendererComponent(JTable table, Object value,boolean isSelected, boolean hasFocus, int row, int column) {
             JLabel comp = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            /*DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-            centerRenderer.setHorizontalAlignment( JLabel.CENTER );
-            table.setDefaultRenderer(String.class, centerRenderer);
-            */
+
+            if(value != null){
+                Class<?> valueClass = value.getClass();
+                if(valueClass.equals(String.class)){
+                    comp.setHorizontalAlignment(LEFT);
+                }
+                if(valueClass.equals(Integer.class)){
+                    comp.setHorizontalAlignment(RIGHT);
+                }
+                if(valueClass.equals(BigDecimal.class)){
+                    comp.setHorizontalAlignment(RIGHT);
+                }
+            }
+
+
+            int rowIndex = table.convertRowIndexToView(row);
+            boolean isMarked = selectedRows.contains(rowIndex);
+
+            if(column == 0){
+                comp.setForeground(Color.BLACK);
+                comp.setBackground(isMarked ? Color.red : table.getTableHeader().getBackground());
+                return comp;
+            }
+
+            if(table.getSelectionModel().getLeadSelectionIndex() == row){
+                comp.setForeground(Color.BLACK);
+                comp.setBackground(Color.CYAN);
+                return comp;
+            }
+
+            if (isMarked) {
+                comp.setBackground(Color.red);
+                return comp;
+            }
+
+            comp.setBackground((row % 2 == 0) ? null : alternateRowColor);
+            return comp;
+        }
+    }
+/*
+
+    private class cellRenderer extends DefaultTableCellRenderer {
+
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        private final Color alternateRowColor;
+
+        public cellRenderer(Color g){
+            this.alternateRowColor = g;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,boolean isSelected, boolean hasFocus, int row, int column) {
+            JLabel comp = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
             if(value != null){
                 if(value.getClass().equals(String.class)){
                     comp.setHorizontalAlignment(LEFT);
@@ -288,27 +333,20 @@ public class Table extends JTable implements MouseListener, ListSelectionListene
             return comp;
         }
     }
+*/
 
-
-    private static class HeaderHighlightRenderer implements TableCellRenderer {
-
-        private final TableCellRenderer defaultRenderer;
-
-        public HeaderHighlightRenderer(TableCellRenderer defaultRenderer) {
-            this.defaultRenderer = defaultRenderer;
-        }
+    private record HeaderHighlightRenderer(TableCellRenderer defaultRenderer) implements TableCellRenderer {
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,boolean isSelected, boolean hasFocus, int row, int column) {
-            JComponent comp = (JComponent) defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            comp.setForeground(Color.white);
-            comp.setBackground(Color.decode("#46863F"));
-            comp.setBorder(new LineBorder(Color.ORANGE, 2, true));
-            comp.setForeground(Color.white);
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JComponent comp = (JComponent) defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                comp.setForeground(Color.white);
+                comp.setBackground(Color.decode("#46863F"));
+                comp.setBorder(new LineBorder(Color.ORANGE, 2, true));
+                comp.setForeground(Color.white);
+                return comp;
+            }
 
-            return comp;
         }
-
-    }
 
 }
